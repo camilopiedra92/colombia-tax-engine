@@ -4,9 +4,14 @@
 >
 > Enterprise-grade implementation of Colombian tax law for natural persons (Formulario 210 - Declaración de Renta Personas Naturales).
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
-[![Tests](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg)](./src/__tests__)
-[![Zero Dependencies](https://img.shields.io/badge/Dependencies-0-success.svg)](./package.json)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Test Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg?logo=vitest&logoColor=white)](./src/__tests__)
+[![Tests](https://img.shields.io/badge/Tests-251_passed-success?logo=vitest&logoColor=white)](./src/__tests__)
+[![Zero Dependencies](https://img.shields.io/badge/Dependencies-0-success.svg?logo=npm&logoColor=white)](./package.json)
+[![Node Version](https://img.shields.io/badge/Node-%3E%3D18.0.0-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
+[![Code Style](https://img.shields.io/badge/Code_Style-TypeScript_Strict-blue)](./tsconfig.json)
 
 ## 🌟 Features
 
@@ -178,12 +183,17 @@ packages/colombia-tax-engine/
 
 ## 🤝 Contributing
 
-This is a standalone, portable package. Contributions should maintain:
+Contributions are welcome! This project aims to be the most accurate and comprehensive Colombian tax engine available.
+
+Please read our [Contributing Guidelines](./CONTRIBUTING.md) before submitting pull requests.
+
+### Quick Guidelines
 
 - Zero runtime dependencies
-- 100% test coverage
+- 100% test coverage required
 - Full compliance with Colombian tax law
 - TypeScript strict mode
+- All tests must pass before merging
 
 ## 📄 License
 
