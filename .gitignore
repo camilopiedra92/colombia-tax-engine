@@ -11,9 +11,10 @@ coverage/
 .vitest-cache/
 .tmp/
 
-# Ignore IDE files
+# Ignore IDE and AI agent files
 .vscode/
 .idea/
+.agent/
 *.swp
 *.swo
 *~
