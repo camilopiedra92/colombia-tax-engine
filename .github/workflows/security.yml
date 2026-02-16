@@ -17,7 +17,7 @@ jobs:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
@@ -34,7 +34,7 @@ jobs:
     name: Dependency Audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Use Node.js 22
         uses: actions/setup-node@v4
