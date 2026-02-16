@@ -54,7 +54,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/camilopiedra92/colombia-tax-engine"
+    "url": "git+https://github.com/camilopiedra92/colombia-tax-engine.git"
   },
   "homepage": "https://github.com/camilopiedra92/colombia-tax-engine#readme",
   "bugs": {
