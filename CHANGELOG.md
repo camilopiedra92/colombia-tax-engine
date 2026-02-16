@@ -26,12 +26,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`.npmignore`**: Updated to exclude all governance and config files from published package
 - **`@types/node`**: Upgraded to v25
 
+## [1.1.1] - 2026-02-15
+
 ### Fixed
 
-- All ESLint warnings resolved (0 errors, 0 warnings)
-- All source files formatted with Prettier
+- **Coverage Regression**: Restored 100% coverage by removing unreachable defensive code in `patrimonio-impuesto.ts`
+- **Linting**: Resolved all 8 ESLint warnings (unused imports, non-null assertions) across source files
+- **Cleanup**: Removed stray development files (`audit_src_dump.md`, `generate_audit_doc.py`) from repository
 
-## [1.0.0] - 2026-02-15
+## [1.1.0] - 2026-02-15
+
+### Added
+
+- **CI/CD**: GitHub Actions workflows for CI (Node 20/22), automated npm publishing with OIDC provenance, and CodeQL security scanning
+- **Dependabot**: Weekly automated dependency updates for npm and GitHub Actions
+- **Security**: `SECURITY.md` with vulnerability reporting process and SLA timelines
+- **Governance**: `CODE_OF_CONDUCT.md` (Contributor Covenant v2.1), structured issue templates, PR template
+- **DX Tooling**: ESLint (typescript-eslint strict), Prettier, Commitlint, Husky (pre-commit, commit-msg, pre-push), EditorConfig
+- **Documentation**: `FAQ.md`, `TROUBLESHOOTING.md`, `ROADMAP.md`, `CHANGELOG.md`
+- **Monitoring**: Bundle size tracking with size-limit (4.44 KB brotlied, 50 KB budget)
+- **Funding**: GitHub Sponsors configuration
+- **Badges**: npm version, downloads, CI status, coverage, bundle size, license
+
+### Changed
+
+- **README.md**: Complete rewrite with badges, navigation, feature tables, and structured layout
+- **package.json**: Added 8 new scripts (`lint`, `format`, `docs`, `size`, `validate`, etc.), `publishConfig` with provenance, funding info, expanded keywords
+- **`.npmignore`**: Updated to exclude all governance and config files from published package
+- **`@types/node`**: Upgraded to v25
+
+### Fixed
+
+- All source files formatted with Prettier
 
 ### Added
 
