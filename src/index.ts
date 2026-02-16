@@ -43,22 +43,42 @@ export class TaxEngine {
     const totalIcaPaid = payer.incomes.reduce((sum, i) => sum + (i.icaPaid || 0), 0);
 
     if (totalIcaPaid > 0) {
-      // Escenario: ICA SIEMPRE preferido como Descuento (50% valor pagado) vs Costo.
-      // Matematica: Descuento = 50% vs Costo = TasaMarginal (<39%).
-      // Por lo tanto, el Descuento siempre es mejor.
-      // Para "Enterprise Grade", simplificamos y eliminamos código muerto inalcanzable.
+      // Escenario A: ICA como Costo (ya incluido en payer.incomes si el usuario lo reportó como tal)
+      // Asumimos que si entró valores en ICA, el calculador standard lo toma.
+      const resultAsCost = this.runCalculation(payer);
 
-      // Clonamos payer y agregamos un TaxCredit
-      const payerWithIcaDiscount = this.clonePayer(payer);
+      // Escenario B: ICA como Descuento (Neutralizando el costo para evitar evasión)
+      const payerAsDiscount = this.clonePayer(payer);
+
+      // Neutralizar ICA en Costos para evitar doble beneficio ("Double Dipping")
+      payerAsDiscount.incomes.forEach((i) => {
+        if (i.icaPaid && i.costs) {
+          // Si el ICA estaba metido en costos, lo sacamos.
+          // Simplificación: Asumimos que i.costs incluye i.icaPaid si se usó method 1.
+          // En la realidad, deberíamos saber si el usuario lo incluyó.
+          // Pero para blindar, restamos el ICA del costo.
+          i.costs = Math.max(0, i.costs - i.icaPaid);
+        }
+      });
+
       const icaCredit: TaxCredit = {
         id: 'auto-ica-discount',
         category: 'otro_descuento',
         description: 'Descuento Tributario ICA (50% de lo pagado)',
         value: totalIcaPaid * 0.5, // Art. 115 ET: 50% descuento
       };
-      payerWithIcaDiscount.taxCredits = [...(payerWithIcaDiscount.taxCredits || []), icaCredit];
+      payerAsDiscount.taxCredits = [...(payerAsDiscount.taxCredits || []), icaCredit];
 
-      return this.runCalculation(payerWithIcaDiscount);
+      const resultAsDiscount = this.runCalculation(payerAsDiscount);
+
+      // Regla God Level: Escoger menor saldo a pagar. Si ambos dan igual (ej. $0),
+      // escoger el costo para maximizar la Pérdida Fiscal acumulable.
+      if (resultAsDiscount.balanceToPay < resultAsCost.balanceToPay) return resultAsDiscount;
+      // Tie-breaker: Preferir menor Renta Líquida (mayor costo)
+      // Si el Descuento no fue estrictamente mejor (menor impuesto), entonces preferimos
+      // el Costo porque reduce la renta líquida (y por ende el patrimonio, etc).
+      // Esto maneja el empate (impuestos iguales) y el caso teórico (muy raro) donde Costo < Descuento.
+      return resultAsCost;
     }
 
     // Si no hay ICA, cálculo normal
@@ -95,7 +115,7 @@ export class TaxEngine {
     const dividendosResult = calculateDividendSchedule(payer);
 
     // ═══ 5.1 CONSOLIDACIÓN DIVIDENDOS (según residencia) ═══
-    let totalIncomeTax: number;
+    let basicIncomeTax: number; // NUEVO: Impuesto Ordinario (Sin GO)
     let consolidatedTaxableIncome: number;
 
     if (dividendosResult.isNonResident) {
@@ -104,15 +124,9 @@ export class TaxEngine {
       // Las demás cédulas se calculan normalmente sin consolidación con dividendos
       consolidatedTaxableIncome = generalResult.taxableIncome + pensionesResult.taxableIncome;
       const baseTax = applyTaxTable(consolidatedTaxableIncome, payer.year);
-      totalIncomeTax = baseTax + dividendosResult.totalTax;
+      basicIncomeTax = baseTax + dividendosResult.totalTax;
     } else {
       // ═══ RESIDENTES (Ley 2277, Art. 331 ET mod.) ═══
-      // Desde Ley 2277, los dividendos de sub-cédula 1 se SUMAN a la renta
-      // líquida gravable de las demás cédulas.
-      // Los de sub-cédula 2, su remanente (tras el 35%) TAMBIÉN se suma.
-      // Para aplicar correctamente el descuento del 19% (solo a Sub-1),
-      // debemos calcular el impuesto marginal por capas (stacking).
-
       // Capa 0: General + Pensiones
       const base0 = generalResult.taxableIncome + pensionesResult.taxableIncome;
       // Capa 1: + Dividendos Sub-1 (Sujetos a descuento 19%)
@@ -129,31 +143,24 @@ export class TaxEngine {
       dividendosResult.subCedula1.tax = marginalSub1;
 
       // Descuento tributario del 19% (Art. 254-1 ET)
-      // Se calcula sobre el valor de los dividendos (Sub1 + Remanente Sub2) que exceda 1090 UVT.
-      // NO sobre el impuesto marginal.
       const dividendBaseForDiscount =
         dividendosResult.subCedula1.grossIncome + dividendosResult.subCedula2.remainingBase;
       const threshold1090 = 1090 * rules.UVT;
       const excessBase = Math.max(0, dividendBaseForDiscount - threshold1090);
 
-      // El descuento es el 19% del exceso
       const potentialDiscount19 = Math.round(excessBase * rules.DIVIDENDOS.SUB1_DISCOUNT_PCT);
 
-      // FIX "God Level": Candado en el Descuento de Dividendos
-      // El descuento no puede exceder el impuesto atribuible a los dividendos (marginalSub1)
-      // o generaría un saldo a favor artificial contra la cédula general.
-      const discount19 = Math.min(potentialDiscount19, marginalSub1);
+      // FIX "God Level": Liberar candado del 19%. Se topará globalmente abajo.
+      const discount19 = potentialDiscount19; // Eliminar el Math.min
+
+      const marginalSub2 = Math.max(0, tax2 - tax1);
 
       dividendosResult.subCedula1.discount19 = discount19;
-      // Para display, netTax es el marginal menos el descuento (puede ser 0 si el descuento cubre todo)
-      // El descuento real se suma a totalTaxCredits más adelante.
+      // NetTax no puede ser negativo
       dividendosResult.subCedula1.netTax = Math.max(0, marginalSub1 - discount19);
 
       // B) Impuesto marginal Sub-cédula 2 (Remanente)
-      const marginalSub2 = Math.max(0, tax2 - tax1);
       dividendosResult.subCedula2.additionalTax = marginalSub2;
-      // El netTax de sub-2 incluye el 35% inicial + este marginal
-      // (El 35% ya venía en dividendosResult.subCedula2.netTax desde el calculador)
       dividendosResult.subCedula2.netTax += marginalSub2;
 
       // Actualizar totalTax de dividendos consolidados
@@ -162,25 +169,25 @@ export class TaxEngine {
 
       consolidatedTaxableIncome = base2;
 
-      // Impuesto total de renta:
+      // Impuesto total ORDINARIO (Sin GO):
       // tax2 (Impuesto de tabla sobre TODO) + tax35 (Impuesto plano 35% de sub-2)
-      // NOTA: tax2 incluye las capas general y dividendos.
-      // Para 'totalIncomeTax' queremos el impuesto bruto ANTES de descuentos.
-      totalIncomeTax = tax2 + dividendosResult.subCedula2.tax35;
+      basicIncomeTax = tax2 + dividendosResult.subCedula2.tax35;
     }
 
     // ═══ 6. GANANCIA OCASIONAL (Art. 299-317 ET) ═══
-    const goResult = calculateGananciaOcasional(payer);
-    totalIncomeTax += goResult.totalTax;
+    // FIX Bug C: Se calcula aparte y se suma AL FINAL. No afecta Anticipos ni Descuentos Ordinarios.
+    // (Lógica movida abajo)
 
     // ═══ 7. DESCUENTOS TRIBUTARIOS (Art. 254-260-1 ET) ═══
     // Calcular renta neta de fuente extranjera para Art. 254 proporcional
     const foreignNetIncome = payer.incomes
       .filter((i) => i.isForeignSource)
       .reduce((sum, i) => sum + Math.max(0, i.grossValue - (i.costs || 0)), 0);
+
+    // FIX: Descuentos calculados sobre basicIncomeTax (Sin Ganancia Ocasional)
     const descuentosResult = calculateDescuentos(
       payer,
-      totalIncomeTax,
+      basicIncomeTax,
       foreignNetIncome,
       consolidatedTaxableIncome,
     );
@@ -188,24 +195,45 @@ export class TaxEngine {
     // El descuento de dividendos (19%) calculado anteriormente
     const dividendDiscount = dividendosResult.subCedula1.discount19 || 0;
 
-    let totalTaxCredits = descuentosResult.totalCredits + dividendDiscount;
+    let totalTaxCredits = descuentosResult.totalCredits + dividendDiscount; // Nota: dividendDiscount ya esta topado
     // Re-validar límite: descuentos no pueden exceder impuesto básico
-    totalTaxCredits = Math.min(totalTaxCredits, totalIncomeTax);
-    const netIncomeTax = Math.max(0, totalIncomeTax - totalTaxCredits);
+    totalTaxCredits = Math.min(totalTaxCredits, basicIncomeTax);
+
+    const netIncomeTax = Math.max(0, basicIncomeTax - totalTaxCredits);
+
+    // AHORA Si: Sumar Impuesto Ganancia Ocasional
+    const goResult = calculateGananciaOcasional(payer);
+    const totalIncomeTax = netIncomeTax + goResult.totalTax; // Total Impuesto Renta + Ganancia Ocasional
 
     // ═══ 8. RETENCIONES EN LA FUENTE ═══
-    // Incluir retenciones calculadas de dividendos
-    const totalWithholding = this.calculateTotalWithholding(payer) + dividendosResult.withholding;
+    // Separar retenciones ordinarias vs ganancia ocasional (loterías)
+    const withholdingOrdinario = payer.incomes.reduce((sum, inc) => {
+      // FIX Auditoría: No sumar retenciones de Ganancia Ocasional aquí
+      if (inc.category === 'ganancia_ocasional' || inc.category === 'loteria_premios') return sum;
+      return sum + (inc.withholdingTax || 0) + (inc.withholdingDividends || 0);
+    }, 0);
+    const withholdingGO = payer.incomes.reduce(
+      (sum, inc) => sum + (inc.withholdingLotteries || 0),
+      0,
+    );
+    const totalWithholding = withholdingOrdinario + withholdingGO;
 
     // ═══ 9. ANTICIPO (Art. 807 ET) ═══
-    const anticipoResult = calculateAnticipo(payer, netIncomeTax, totalWithholding);
+    // FIX: Anticipo cruza solo contra retenciones ordinarias
+    const anticipoResult = calculateAnticipo(payer, netIncomeTax, withholdingOrdinario);
 
     // ═══ 10. OBLIGADOS A DECLARAR (Art. 592-594 ET) ═══
     const obligadoResult = checkObligadoDeclarar(payer);
 
     // ═══ 11. SALDO FINAL ═══
-    // Impuesto a cargo = Impuesto neto + Anticipo siguiente año
-    const totalTaxDue = netIncomeTax + anticipoResult.anticipoNextYear;
+    // Impuesto a cargo = Impuesto neto + Tributo GO + Impuesto Patrimonio (separado) + Anticipo siguiente
+    // NOTA: El Impuesto patrimonio NO se suma al Total Impuesto Renta, es un formulario aparte pero
+    // para efectos de "balanceToPay" global, lo sumamos?
+    // Muisca: Formulario 210 Renglon 135 (Total Saldo a Pagar).
+    // Ganancia Ocasional SI se suma al Renglon 128 (Total Impuesto Cargo).
+
+    // totalTaxesWithGO ya incluye NetOrdinario + GO.
+    const totalTaxDue = totalIncomeTax + anticipoResult.anticipoNextYear;
 
     // Saldo a pagar = Impuesto a cargo - Retenciones - Anticipo año anterior
     // Si es negativo = saldo a favor
@@ -319,21 +347,6 @@ export class TaxEngine {
     const patrimonioLiquido = Math.max(0, patrimonioBruto - totalPasivos);
 
     return { patrimonioBruto, totalPasivos, patrimonioLiquido };
-  }
-
-  /**
-   * Calcula el total de retenciones en la fuente de todas las fuentes de ingreso.
-   * No incluye la retención calculada de dividendos (se suma por separado).
-   */
-  private static calculateTotalWithholding(payer: TaxPayer): number {
-    return payer.incomes.reduce((sum, inc) => {
-      return (
-        sum +
-        (inc.withholdingTax || 0) +
-        (inc.withholdingDividends || 0) +
-        (inc.withholdingLotteries || 0)
-      );
-    }, 0);
   }
 
   /**

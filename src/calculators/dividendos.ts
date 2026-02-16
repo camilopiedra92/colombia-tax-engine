@@ -131,18 +131,26 @@ export function calculateDividendSchedule(payer: TaxPayer): DividendosResult {
     netTax: tax35, // Solo incluye el 35% inicial; el resto va al consolidado
   };
 
-  // ═══ 4. Retención en la Fuente (Art. 242 parágrafo) ═══
-  // Se aplica sobre dividendos brutos totales:
-  //   - 0% hasta 1,090 UVT
-  //   - 15% sobre el exceso de 1,090 UVT
-  const totalDividendsUVT = totalDividends / UVT;
+  // ═══ 4. Retención en la Fuente (Art. 242 parágrafo / Decreto 1103 de 2023) ═══
   let withholding = 0;
 
-  if (totalDividendsUVT > DIVIDENDOS.WITHHOLDING_TABLE[0].max) {
-    // Solo se grava el exceso sobre 1,090 UVT al 15%
-    const excessUVT = totalDividendsUVT - DIVIDENDOS.WITHHOLDING_TABLE[0].max;
-    withholding = Math.round(excessUVT * DIVIDENDOS.WITHHOLDING_TABLE[1].rate * UVT);
+  // A. Retención del 35% sobre dividendos gravados (Sub-cédula 2)
+  const withholdingSub2 = Math.round(sub2Gross * DIVIDENDOS.SUB2_RATE);
+
+  // B. Base para la tabla del 15%: Sub-cédula 1 + Remanente de la Sub-cédula 2
+  // El decreto 1103 aclara que se suman los dividendos no gravados (sub1)
+  // con el REMANENTE de los gravados (sub2 - impuesto/retencion 35%)
+  const remanenteSub2 = Math.max(0, sub2Gross - withholdingSub2);
+  const baseTablaWHT = sub1Gross + remanenteSub2;
+  const baseTablaUVT = baseTablaWHT / UVT;
+
+  let withholdingTabla = 0;
+  if (baseTablaUVT > DIVIDENDOS.WITHHOLDING_TABLE[0].max) {
+    const excessUVT = baseTablaUVT - DIVIDENDOS.WITHHOLDING_TABLE[0].max;
+    withholdingTabla = Math.round(excessUVT * DIVIDENDOS.WITHHOLDING_TABLE[1].rate * UVT);
   }
+
+  withholding = withholdingSub2 + withholdingTabla;
 
   return {
     subCedula1,

@@ -40,15 +40,20 @@ export function calculateGananciaOcasional(payer: TaxPayer): GananciaOcasionalRe
   const generalGO = payer.incomes.filter((i) => {
     if (i.category !== 'ganancia_ocasional') return false;
 
-    // Regla de 2 años (Art. 300 ET): Activos con posesión < 2 años no son GO
-    // Soporta holdingPeriodYears (nuevo) o heldDurationDays (legacy)
-    const yearsHeld =
-      i.holdingPeriodYears ??
-      (i.heldDurationDays !== undefined ? i.heldDurationDays / 365 : undefined);
-    if (yearsHeld !== undefined && yearsHeld < 2) {
-      return false; // Es renta líquida (general.ts lo reclasifica como renta_no_laboral)
+    // FIX: La regla de 2 años NO aplica a herencias, seguros ni donaciones
+    // Solo aplica a la VENTA de activos fijos.
+    const isSale = i.description.toLowerCase().match(/(venta|enajenacion|enajenación)/);
+
+    if (isSale) {
+      // Regla de 2 años (Art. 300 ET): Activos con posesión < 2 años no son GO
+      const yearsHeld =
+        i.holdingPeriodYears ??
+        (i.heldDurationDays !== undefined ? i.heldDurationDays / 365 : undefined);
+      if (yearsHeld !== undefined && yearsHeld < 2) {
+        return false; // Es renta líquida (general.ts lo reclasifica como renta_no_laboral)
+      }
     }
-    return true;
+    return true; // Si es herencia/donación/seguro, SIEMPRE es GO.
   });
 
   const lotteryGO = payer.incomes.filter((i) => i.category === 'loteria_premios');
@@ -76,10 +81,15 @@ export function calculateGananciaOcasional(payer: TaxPayer): GananciaOcasionalRe
   // debe depositarse en una cuenta AFC o destinarse al pago de hipoteca.
   const ventaVivienda = generalGO.filter((i) => {
     const desc = i.description.toLowerCase();
-    return (
+    const isHousingSale =
       (desc.includes('venta') || desc.includes('enajenación') || desc.includes('enajenacion')) &&
-      (desc.includes('vivienda') || desc.includes('casa') || desc.includes('apartamento'))
-    );
+      (desc.includes('vivienda') || desc.includes('casa') || desc.includes('apartamento'));
+
+    // OPTIMIZACIÓN 3: Verificar cumplimiento de requisitos (AFC / Hipoteca)
+    // Y FIX Auditoría: Costo fiscal debe ser <= 15.000 UVT (Par. 1 Art. 311-1)
+    const complies = (i.depositedInAFC || i.usedForMortgage) && (i.costBasis || 0) <= 15000 * UVT;
+
+    return isHousingSale && complies;
   });
   ventaVivienda.forEach((inc) => {
     const netGain = Math.max(0, inc.grossValue - (inc.costBasis || 0));
@@ -97,9 +107,9 @@ export function calculateGananciaOcasional(payer: TaxPayer): GananciaOcasionalRe
       (desc.includes('vivienda') || desc.includes('casa') || desc.includes('apartamento'))
     );
   });
-  herenciaVivienda.forEach((inc) => {
-    exemptionsGeneral += Math.min(inc.grossValue, GO.EXEMPT_HOUSING_INHERITANCE_UVT * UVT);
-  });
+  // FIX: Sumar primero, topar después
+  const totalHerenciaVivienda = herenciaVivienda.reduce((sum, inc) => sum + inc.grossValue, 0);
+  exemptionsGeneral += Math.min(totalHerenciaVivienda, GO.EXEMPT_HOUSING_INHERITANCE_UVT * UVT);
 
   // Art. 307 num 2: Herencias — Asignación por heredero/legatario — 3,250 UVT c/u
   // Se aplica a los legitimarios (herederos legales) y al cónyuge supérstite
@@ -119,9 +129,9 @@ export function calculateGananciaOcasional(payer: TaxPayer): GananciaOcasionalRe
       !desc.includes('bodega')
     );
   });
-  herenciaGral.forEach((inc) => {
-    exemptionsGeneral += Math.min(inc.grossValue, GO.EXEMPT_PER_HEIR_UVT * UVT);
-  });
+  // FIX: Sumar primero, topar después (Herencias Generales)
+  const totalHerenciaGral = herenciaGral.reduce((sum, inc) => sum + inc.grossValue, 0);
+  exemptionsGeneral += Math.min(totalHerenciaGral, GO.EXEMPT_PER_HEIR_UVT * UVT);
 
   // Art. 307 num 2 (Ley 2277): Herencias — Inmuebles diferentes a vivienda — 6,500 UVT
   // (Fincas, lotes, locales, oficinas, bodegas, etc.)
@@ -142,12 +152,13 @@ export function calculateGananciaOcasional(payer: TaxPayer): GananciaOcasionalRe
       !desc.includes('vivienda') && !desc.includes('casa') && !desc.includes('apartamento');
     return isInheritance && isRealEstate && isNotHousing;
   });
-
-  herenciaInmueblesOtros.forEach((inc) => {
-    // Art. 307 num 4: inmuebles heredados (no vivienda) — tope EXEMPT_REAL_ESTATE_INHERITANCE_UVT
-    const limit = GO.EXEMPT_REAL_ESTATE_INHERITANCE_UVT * UVT;
-    exemptionsGeneral += Math.min(inc.grossValue, limit);
-  });
+  // FIX: Sumar primero, topar después
+  const totalHerenciaInmueblesOtros = herenciaInmueblesOtros.reduce(
+    (sum, inc) => sum + inc.grossValue,
+    0,
+  );
+  const limitInmuebles = GO.EXEMPT_REAL_ESTATE_INHERITANCE_UVT * UVT;
+  exemptionsGeneral += Math.min(totalHerenciaInmueblesOtros, limitInmuebles);
 
   // Art. 303-1: Seguros de vida — primeras 12,500 UVT exentas
   // FIX: Actualizado valor a 3,250 UVT (GO.EXEMPT_LIFE_INSURANCE_UVT) según rules.ts
@@ -161,11 +172,11 @@ export function calculateGananciaOcasional(payer: TaxPayer): GananciaOcasionalRe
     const desc = i.description.toLowerCase();
     return desc.includes('donacion') || desc.includes('donación');
   });
-  donaciones.forEach((inc) => {
-    const exempt20Pct = Math.round(inc.grossValue * GO.EXEMPT_OTHER_BENEFICIARY_PCT);
-    // FIX: Asegurar uso de la constante correcta (1,625 UVT)
-    exemptionsGeneral += Math.min(exempt20Pct, GO.EXEMPT_DONATIONS_RECEIVED_UVT * UVT);
-  });
+
+  // FIX: Sumar primero, topar después (Donaciones)
+  const totalDonaciones = donaciones.reduce((sum, inc) => sum + inc.grossValue, 0);
+  const exempt20Pct = Math.round(totalDonaciones * GO.EXEMPT_OTHER_BENEFICIARY_PCT);
+  exemptionsGeneral += Math.min(exempt20Pct, GO.EXEMPT_DONATIONS_RECEIVED_UVT * UVT);
 
   // Deducción adicional de exenciones desde deducciones del contribuyente
   // (para mantener retrocompatibilidad con exenciones ingresadas manualmente)

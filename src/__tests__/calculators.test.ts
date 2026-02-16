@@ -124,14 +124,15 @@ describe('General Schedule Calculator', () => {
     // 1340 UVT = 63M > 40M. So limit is 40M.
 
     expect(result.globalLimit).toBe(limit40);
-    expect(result.facturaElectronica).toBe(1_000_000);
+    // FIX Audit 2025: Limit is 1% of value, capped at 240 UVT
+    expect(result.facturaElectronica).toBe(10_000); // 1% of 1,000,000
 
     // acceptedClaims should include the electronic invoice exceeding the limit
     // Claims subject to limit: 50M (interest) + 25M (25% labor exempt) = 75M.
     // These get capped at 40M.
-    // Then + 1M Invoice.
-    // Total = 41M.
-    expect(result.acceptedClaims).toBe(limit40 + 1_000_000);
+    // Then + 10k Invoice (1% of 1M).
+    // Total = limit40 + 10k.
+    expect(result.acceptedClaims).toBe(limit40 + 10_000);
   });
 
   it('should correctly handle independent costs vs 25% exemption', () => {

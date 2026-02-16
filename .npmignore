@@ -4,6 +4,7 @@ examples
 benchmarks
 .agent
 .tmp
+audit/
 .vitest-cache
 .npm-cache
 coverage
@@ -53,4 +54,3 @@ TROUBLESHOOTING.md
 ROADMAP.md
 .all-contributorsrc
 .nvmrc
-audit_src_dump.md

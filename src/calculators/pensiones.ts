@@ -27,16 +27,40 @@ export function calculatePensionesSchedule(payer: TaxPayer): PensionesResult {
   // 2. Total ingresos brutos por pensiones
   const grossIncome = pensionIncomes.reduce((sum, i) => sum + i.grossValue, 0);
 
-  // 3. Exención: hasta 1,000 UVT mensuales (Art. 206 num 5 ET)
+  // 4. Exención: hasta 1,000 UVT mensuales (Art. 206 num 5 ET)
+  // FIX: Las pensiones del exterior no tienen la exención de 1000 UVT (Concepto DIAN 1178 de 2021)
+  const colombianPensions = pensionIncomes.filter((i) => !i.isForeignSource);
+
   // Para el cálculo anual, usamos 1,000 UVT * número de mesadas
-  // Buscamos el mayor número de mesadas reportado en los ingresos pensionales
-  const maxMesadas = pensionIncomes.reduce((max, i) => Math.max(max, i.numberOfMesadas || 13), 13);
+  const maxMesadas = colombianPensions.reduce(
+    (max, i) => Math.max(max, i.numberOfMesadas || 13),
+    13,
+  );
+
+  const colombianGross = colombianPensions.reduce((sum, i) => sum + i.grossValue, 0);
+
+  // FIX Auditoría: Restar INCR (Salud + Solidaridad) antes de la exención
+  const colombianINCR = colombianPensions.reduce(
+    (sum, i) => sum + (i.healthContribution || 0) + (i.solidarityFund || 0),
+    0,
+  );
+  const colombianNet = Math.max(0, colombianGross - colombianINCR);
+
   const exemptLimit = PENSIONES.EXEMPT_MONTHLY_UVT * maxMesadas * UVT;
-  const exemptAmount = Math.min(grossIncome, exemptLimit);
+
+  const exemptAmount = Math.min(colombianNet, exemptLimit);
 
   // 4. Renta líquida gravable = Excedente sobre la exención
+  // 4. Renta líquida gravable = Excedente sobre la exención
   // Art. 337: NO se permiten deducciones ni rentas exentas adicionales
-  const taxableIncome = Math.max(0, grossIncome - exemptAmount);
+  // FIX: Restar INCR globalmente también
+  const incrTotal = pensionIncomes.reduce(
+    (sum, i) => sum + (i.healthContribution || 0) + (i.solidarityFund || 0),
+    0,
+  );
+  const netIncome = Math.max(0, grossIncome - incrTotal);
+
+  const taxableIncome = Math.max(0, netIncome - exemptAmount);
 
   // El impuesto se calculará externamente con la tabla Art. 241
   return {
