@@ -61,10 +61,7 @@ export function calculatePatrimonioTax(
   // Invariante: threshold (72,000 UVT) > max exclusion (12,000 UVT)
   // → taxableBase > 0 → taxableBaseUVT > 0 → TABLE siempre encuentra rango
   // (TABLE[0].min = 0, TABLE[-1].max = Infinity)
-  const bracket = TABLE.find((r) => taxableBaseUVT > r.min && taxableBaseUVT <= r.max);
-  if (!bracket) {
-    return { isSubject: true, taxableBase, tax: 0 };
-  }
+  const bracket = TABLE.find((r) => taxableBaseUVT > r.min && taxableBaseUVT <= r.max)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
 
   const baseTax: number = (bracket as { baseTax: number }).baseTax;
   const taxUVT = baseTax + (taxableBaseUVT - bracket.min) * bracket.rate;
