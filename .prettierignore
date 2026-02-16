@@ -1,0 +1,7 @@
+dist
+coverage
+node_modules
+.npm-cache
+.tmp
+.vitest-cache
+*.md

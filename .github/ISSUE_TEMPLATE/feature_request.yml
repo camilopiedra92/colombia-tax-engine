@@ -1,0 +1,40 @@
+---
+name: ✨ Feature Request
+description: Suggest a new feature or improvement
+labels: [enhancement, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please provide details below.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you like this to work?
+    validations:
+      required: true
+  - type: textarea
+    id: api
+    attributes:
+      label: API Design
+      description: If applicable, show how the API would look
+      render: typescript
+  - type: input
+    id: tax-law
+    attributes:
+      label: Tax Law Reference
+      description: "If applicable, cite the relevant article"
+      placeholder: "Art. XXX ET / Ley XXXX/YYYY"
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions you've considered?

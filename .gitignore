@@ -35,3 +35,6 @@ yarn-error.log*
 .env.*.local
 .npmrc
 .npm-cache/
+
+# Ignore generated docs
+docs/api/

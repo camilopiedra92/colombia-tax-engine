@@ -1,20 +1,29 @@
 # Development files
 src/__tests__
 examples
+benchmarks
 .agent
 .tmp
 .vitest-cache
 .npm-cache
 coverage
+docs
 
 # Config files
 tsconfig.json
 vitest.config.mts
+eslint.config.mjs
+commitlint.config.mjs
+.prettierrc
+.prettierignore
+.editorconfig
+.size-limit.json
 .gitignore
 
 # Git
 .git
 .gitattributes
+.husky
 
 # IDE
 .vscode
@@ -34,3 +43,14 @@ pnpm-lock.yaml
 
 # CI/CD
 .github
+
+# Community files (not needed in package)
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+SECURITY.md
+FAQ.md
+TROUBLESHOOTING.md
+ROADMAP.md
+.all-contributorsrc
+.nvmrc
+audit_src_dump.md

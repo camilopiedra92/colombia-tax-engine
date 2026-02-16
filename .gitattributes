@@ -1,0 +1,21 @@
+# Normalize line endings
+* text=auto eol=lf
+
+# Source
+*.ts text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+
+# Documentation
+*.md text eol=lf
+
+# Configuration
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Ignore generated files in diffs
+dist/** linguist-generated=true
+coverage/** linguist-generated=true
+
+# Mark vendored
+node_modules/** linguist-vendored

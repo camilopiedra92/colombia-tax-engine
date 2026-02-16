@@ -26,7 +26,16 @@
     "test:watch": "TMPDIR=\"$(pwd)/.tmp\" vitest",
     "test:coverage": "TMPDIR=\"$(pwd)/.tmp\" vitest run --coverage",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "docs": "typedoc src/index.ts --out docs/api",
+    "size": "size-limit",
+    "size:check": "size-limit --json",
+    "validate": "npm run typecheck && npm run lint && npm test && npm run build",
+    "prepublishOnly": "npm run validate",
+    "prepare": "husky"
   },
   "keywords": [
     "colombia",
@@ -36,17 +45,45 @@
     "declaracion-renta",
     "formulario-210",
     "dian",
-    "estatuto-tributario"
+    "estatuto-tributario",
+    "impuestos",
+    "renta",
+    "personas-naturales",
+    "colombian-tax"
   ],
   "author": "Tax Optimizer Team",
   "license": "MIT",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/camilopiedra92"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@commitlint/cli": "^20.4.1",
+    "@commitlint/config-conventional": "^20.4.1",
+    "@eslint/js": "^9.39.2",
+    "@size-limit/file": "^12.0.0",
     "@types/node": "^20.0.0",
     "@vitest/coverage-v8": "^4.0.18",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "prettier": "^3.8.1",
+    "size-limit": "^12.0.0",
+    "typedoc": "^0.28.17",
     "typescript": "^5.0.0",
+    "typescript-eslint": "^8.55.0",
     "vitest": "^4.0.18"
   },
   "engines": {

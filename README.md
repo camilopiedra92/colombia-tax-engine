@@ -1,37 +1,47 @@
 # Colombian Tax Engine 🇨🇴
 
-> **Portable and Reusable Colombian Tax Calculator**
+> **Enterprise-grade Colombian Tax Calculator**
 >
-> Enterprise-grade implementation of Colombian tax law for natural persons (Formulario 210 - Declaración de Renta Personas Naturales).
+> The most accurate and comprehensive implementation of Colombian tax law for natural persons (Formulario 210 - Declaración de Renta Personas Naturales).
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![npm version](https://img.shields.io/npm/v/colombia-tax-engine?color=cb0000&logo=npm)](https://www.npmjs.com/package/colombia-tax-engine)
+[![npm downloads](https://img.shields.io/npm/dm/colombia-tax-engine?color=blue&logo=npm)](https://www.npmjs.com/package/colombia-tax-engine)
+[![CI](https://img.shields.io/github/actions/workflow/status/camilopiedra92/colombia-tax-engine/ci.yml?branch=main&label=CI&logo=github)](https://github.com/camilopiedra92/colombia-tax-engine/actions/workflows/ci.yml)
 [![Test Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg?logo=vitest&logoColor=white)](./src/__tests__)
-[![Tests](https://img.shields.io/badge/Tests-251_passed-success?logo=vitest&logoColor=white)](./src/__tests__)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-0-success.svg?logo=npm&logoColor=white)](./package.json)
-[![Node Version](https://img.shields.io/badge/Node-%3E%3D18.0.0-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
-[![Code Style](https://img.shields.io/badge/Code_Style-TypeScript_Strict-blue)](./tsconfig.json)
+
+---
+
+**📖 [Documentation](./USAGE.md)** · **❓ [FAQ](./FAQ.md)** · **🐛 [Report Bug](https://github.com/camilopiedra92/colombia-tax-engine/issues/new?template=bug_report.yml)** · **✨ [Request Feature](https://github.com/camilopiedra92/colombia-tax-engine/issues/new?template=feature_request.yml)** · **🗺️ [Roadmap](./ROADMAP.md)**
+
+---
 
 ## 🌟 Features
 
-- ✅ **Complete Tax Calculation**: Implements all tax schedules (General, Pensiones, Dividendos, Ganancia Ocasional)
-- ✅ **Fully Compliant**: Based on Estatuto Tributario + Ley 2277/2022
-- ✅ **100% Test Coverage**: 17 comprehensive test suites
-- ✅ **Zero Dependencies**: Pure TypeScript, no external runtime dependencies
-- ✅ **Type-Safe**: Full TypeScript support with detailed type definitions
-- ✅ **Optimized**: Includes "God Level" optimizations (ICA automatic selection, dividend discount lock)
-- ✅ **Portable**: Can be used in any TypeScript/Node.js project
+| Feature | Status |
+| ------- | ------ |
+| Complete Formulario 210 calculation | ✅ |
+| General, Pensiones, Dividendos, Ganancia Ocasional schedules | ✅ |
+| Impuesto al Patrimonio (wealth tax) | ✅ |
+| ICA automatic optimization (cost vs. tax credit) | ✅ |
+| Dividend Discount Lock (Ley 2277/2022) | ✅ |
+| Year-versioned rules (2024, 2025, 2026) | ✅ |
+| Filing obligation detection | ✅ |
+| Filing deadline calculation | ✅ |
+| Anticipo calculation | ✅ |
+| 100% test coverage (251 tests) | ✅ |
+| Zero runtime dependencies | ✅ |
+| Full TypeScript support | ✅ |
+| Tree-shakeable exports | ✅ |
 
 ## 📦 Installation
-
-### From NPM (Recommended)
 
 ```bash
 npm install colombia-tax-engine
 ```
-
-Or with other package managers:
 
 ```bash
 # Yarn
@@ -39,15 +49,6 @@ yarn add colombia-tax-engine
 
 # pnpm
 pnpm add colombia-tax-engine
-```
-
-### From Source
-
-```bash
-git clone https://github.com/camilopiedra92/colombia-tax-engine.git
-cd colombia-tax-engine
-npm install
-npm run build
 ```
 
 ## 🚀 Quick Start
@@ -66,10 +67,10 @@ const taxpayer: TaxPayer = {
       id: "salary-1",
       description: "Salario Empresa XYZ",
       category: "renta_trabajo",
-      grossValue: 120000000,
-      healthContribution: 4800000,
-      pensionContribution: 4800000,
-      withholdingTax: 8500000,
+      grossValue: 120_000_000,
+      healthContribution: 4_800_000,
+      pensionContribution: 4_800_000,
+      withholdingTax: 8_500_000,
     },
   ],
   deductions: [],
@@ -84,93 +85,88 @@ console.log("Saldo a pagar:", result.balanceToPay);
 console.log("Obligado a declarar:", result.isObligatedToFile);
 ```
 
-## 📚 Implemented Tax Law
+## 📚 Tax Law Coverage
 
-### Normativa Completa
+### Normativa Implementada
 
-- **Estatuto Tributario (ET)**: Art. 55-57, 115, 119, 126-1/4, 188, 206, 241, 242, 245, 254-260-1, 261-286, 292-3, 295-3, 299-317, 330-337, 387, 592-594, 807-809
-- **Ley 2277/2022**: Consolidación dividendos, límite 1340 UVT, factura electrónica, impuesto patrimonio
-- **Ley 2010/2019**: Renta presuntiva 0%
-- **Ley 2380/2024**: Descuento donaciones alimentos 37%
-- **DUR 1625/2016**: IBC independientes
-- **Decreto 2229/2023**: Calendario vencimientos
+| Norma | Artículos | Descripción |
+| ----- | --------- | ----------- |
+| **Estatuto Tributario** | Art. 55-57, 115, 119, 126-1/4, 188, 206, 241, 242, 245, 254-260-1, 261-286, 292-3, 295-3, 299-317, 330-337, 387, 592-594, 807-809 | Base normativa completa |
+| **Ley 2277/2022** | — | Consolidación dividendos, límite 1340 UVT |
+| **Ley 2010/2019** | — | Renta presuntiva 0% |
+| **Ley 2380/2024** | — | Descuento donaciones alimentos 37% |
+| **DUR 1625/2016** | — | IBC independientes |
+| **Decreto 2229/2023** | — | Calendario vencimientos |
 
 ### Tax Schedules
 
-1. **Cédula General** (Art. 330-336): Labor income, capital income, independent services
+1. **Cédula General** (Art. 330-336): Labor income, capital, independent services
 2. **Cédula de Pensiones** (Art. 337): Pension income with exemptions
 3. **Cédula de Dividendos** (Art. 242, Ley 2277): Dividend taxation with consolidation
-4. **Ganancia Ocasional** (Art. 299-317): Occasional gains (assets, inheritances, lotteries)
-5. **Impuesto al Patrimonio** (Art. 292-3): Wealth tax for patrimony ≥ 72,000 UVT
+4. **Ganancia Ocasional** (Art. 299-317): Occasional gains
+5. **Impuesto al Patrimonio** (Art. 292-3): Wealth tax ≥ 72,000 UVT
 
 ### Special Optimizations
 
-#### 🎯 ICA Optimization
+#### 🎯 ICA Optimization (Automatic)
 
-Automatically determines whether ICA (Industria y Comercio) is better as:
-
-- **Cost** (100% deductible from taxable base), or
-- **Tax Credit** (50% direct discount from tax)
-
-The engine always chooses the optimal route (typically tax credit).
+Determines whether ICA is better as **cost** (100% deductible) or **tax credit** (50% discount). Always picks the optimal route.
 
 #### 🔒 Dividend Discount Lock
 
-Ensures the 19% dividend discount never exceeds the marginal tax attributable to dividends, preventing artificial refunds.
+Ensures the 19% dividend discount never exceeds marginal tax attributable to dividends, preventing artificial refunds.
 
 ## 📖 API Reference
 
-### Main Class: `TaxEngine`
-
-#### `TaxEngine.calculate(payer: TaxPayer): TaxResult`
+### `TaxEngine.calculate(payer: TaxPayer): TaxResult`
 
 Calculates the complete tax return for a taxpayer.
 
-**Parameters:**
+```typescript
+import { TaxEngine, TaxPayer, TaxResult } from "colombia-tax-engine";
 
-- `payer`: Complete taxpayer information (see `TaxPayer` interface)
-
-**Returns:**
-
-- `TaxResult`: Complete tax calculation with all schedules, taxes, credits, and final balance
+const result: TaxResult = TaxEngine.calculate(taxpayer);
+```
 
 ### Key Types
 
-- **`TaxPayer`**: Input data structure (taxpayer, incomes, deductions, assets, liabilities)
-- **`TaxResult`**: Complete calculation result
-- **`IncomeCategory`**: All income types (labor, pensions, dividends, etc.)
-- **`DeductionCategory`**: All deduction types
-- **`TaxCreditCategory`**: All tax credit types
-- **`TaxYear`**: 2024 | 2025 | 2026
+| Type | Description |
+| ---- | ----------- |
+| `TaxPayer` | Input data structure |
+| `TaxResult` | Complete calculation result |
+| `IncomeCategory` | All income types |
+| `DeductionCategory` | All deduction types |
+| `TaxCreditCategory` | All tax credit types |
+| `TaxYear` | `2024 \| 2025 \| 2026` |
 
-See [USAGE.md](./USAGE.md) for detailed examples and migration guide.
+📖 See [USAGE.md](./USAGE.md) for detailed examples, advanced scenarios, and migration guide.
 
 ## 🧪 Testing
 
 ```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Generate coverage report
-npm run test:coverage
+npm test              # Run all tests (251 tests)
+npm run test:watch    # Watch mode
+npm run test:coverage # Coverage report (100%)
 ```
 
-**Coverage**: 100% across all metrics (statements, branches, functions, lines)
+## 🛠️ Development
 
-## 📝 Documentation
-
-- [USAGE.md](./USAGE.md) - Comprehensive usage guide with examples
-- [CHANGELOG.md](./CHANGELOG.md) - Version history
-- [/src/types.ts](./src/types.ts) - Complete type definitions
-- [/src/rules.ts](./src/rules.ts) - Tax rules and constants
+```bash
+npm run build         # Compile TypeScript
+npm run typecheck     # Type check without emit
+npm run lint          # ESLint
+npm run lint:fix      # ESLint with auto-fix
+npm run format        # Prettier
+npm run format:check  # Prettier check
+npm run docs          # Generate API docs
+npm run size          # Bundle size analysis
+npm run validate      # Full validation (types + lint + test + build)
+```
 
 ## 🏗️ Project Structure
 
 ```
-packages/colombia-tax-engine/
+colombia-tax-engine/
 ├── src/
 │   ├── index.ts              # Main TaxEngine class
 │   ├── types.ts              # Type definitions
@@ -184,37 +180,59 @@ packages/colombia-tax-engine/
 │   │   ├── anticipo.ts
 │   │   ├── obligados.ts
 │   │   └── patrimonio-impuesto.ts
-│   └── __tests__/            # 17 comprehensive test suites
+│   └── __tests__/            # 17 test suites
+├── .github/
+│   ├── workflows/            # CI/CD pipelines
+│   ├── ISSUE_TEMPLATE/       # Issue templates
+│   └── PULL_REQUEST_TEMPLATE.md
 ├── examples/                 # Usage examples
-├── package.json
-├── tsconfig.json
-└── vitest.config.mts
+├── docs/                     # Generated API docs
+├── USAGE.md                  # Comprehensive usage guide
+├── CONTRIBUTING.md           # Contribution guidelines
+├── SECURITY.md               # Security policy
+├── FAQ.md                    # Frequently asked questions
+├── ROADMAP.md                # Development roadmap
+└── CHANGELOG.md              # Version history
 ```
+
+## 📝 Documentation
+
+| Document | Description |
+| -------- | ----------- |
+| [USAGE.md](./USAGE.md) | Comprehensive usage guide with examples |
+| [FAQ.md](./FAQ.md) | Frequently asked questions |
+| [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) | Common issues and solutions |
+| [CHANGELOG.md](./CHANGELOG.md) | Version history |
+| [CONTRIBUTING.md](./CONTRIBUTING.md) | How to contribute |
+| [SECURITY.md](./SECURITY.md) | Security policy |
+| [ROADMAP.md](./ROADMAP.md) | Development roadmap |
+| [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) | Community guidelines |
 
 ## 🤝 Contributing
 
-Contributions are welcome! This project aims to be the most accurate and comprehensive Colombian tax engine available.
+Contributions are welcome! Please read our [Contributing Guide](./CONTRIBUTING.md) before submitting PRs.
 
-Please read our [Contributing Guidelines](./CONTRIBUTING.md) before submitting pull requests.
-
-### Quick Guidelines
-
+**Requirements:**
 - Zero runtime dependencies
-- 100% test coverage required
-- Full compliance with Colombian tax law
+- 100% test coverage
 - TypeScript strict mode
-- All tests must pass before merging
+- Conventional commits
+- Tax law references
+
+## 🔒 Security
+
+Found a vulnerability? Please read our [Security Policy](./SECURITY.md) for responsible disclosure.
 
 ## 📄 License
 
-MIT License - See LICENSE file for details
+[MIT](./LICENSE) © Tax Optimizer Team
 
-## 🔗 Related
+## 🔗 Resources
 
-- [DIAN - Dirección de Impuestos y Aduanas Nacionales](https://www.dian.gov.co/)
-- [Estatuto Tributario](https://estatuto.co/)
-- [Gerencie.com - Tax Resources](https://www.gerencie.com/)
+- [DIAN](https://www.dian.gov.co/) - Dirección de Impuestos y Aduanas Nacionales
+- [Estatuto Tributario](https://estatuto.co/) - Colombian Tax Code
+- [Gerencie.com](https://www.gerencie.com/) - Tax Resources
 
 ---
 
-**Made with ❤️ for Colombian taxpayers**
+<p align="center"><b>Made with ❤️ for Colombian taxpayers</b></p>
