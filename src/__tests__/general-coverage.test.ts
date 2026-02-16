@@ -183,7 +183,7 @@ describe('calculateGeneralSchedule — Coverage Completion', () => {
         ],
         deductions: [
           makeDeduction({
-            category: 'indemnizacion_accidente' as any,
+            category: 'indemnizacion_accidente',
             value: 10_000_000,
           }),
         ],
@@ -205,7 +205,7 @@ describe('calculateGeneralSchedule — Coverage Completion', () => {
         ],
         deductions: [
           makeDeduction({
-            category: 'gastos_entierro' as any,
+            category: 'gastos_entierro',
             value: 3_000_000,
           }),
         ],
@@ -227,7 +227,7 @@ describe('calculateGeneralSchedule — Coverage Completion', () => {
         ],
         deductions: [
           makeDeduction({
-            category: 'otras_exentas' as any,
+            category: 'otras_exentas',
             value: 5_000_000,
           }),
         ],
@@ -356,7 +356,7 @@ describe('calculateGeneralSchedule — Coverage Completion', () => {
         ],
         deductions: [
           makeDeduction({
-            category: 'afc' as any,
+            category: 'afc',
             value: 50_000_000, // Way more than 30% of 50M=15M
           }),
         ],
@@ -378,7 +378,7 @@ describe('calculateGeneralSchedule — Coverage Completion', () => {
         ],
         deductions: [
           makeDeduction({
-            category: 'fpv' as any,
+            category: 'fpv',
             value: limit3800 + 50_000_000, // Over 3800 UVT
           }),
         ],

@@ -65,6 +65,8 @@ describe('Occasional Gain (Ganancia Ocasional) Calculator', () => {
           description: 'Venta Vivienda Habitacion',
           grossValue: netGain,
           costBasis: 0,
+          // OPT 3: Must deposit in AFC to get exemption
+          depositedInAFC: true,
         },
       ],
     };

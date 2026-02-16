@@ -47,15 +47,13 @@ describe('Tax Engine Audit Fixes (Golden Standard)', () => {
     const result = TaxEngine.calculate(payer);
     const general = result.cedulaGeneral;
 
-    // Base for 40% limit: Gross (100M) - INCR (0) = 100M
-    const expectedLimitBase = incomeValue;
-    const expectedLimit = expectedLimitBase * 0.4;
+    // FIX Audit 2025: Costs must be subtracted from base.
+    // Base = 100M (Gross) - 0 (INCR) - 60M (Costs) = 40M.
+    // Limit = 40M * 40% = 16M.
+    // Absolute Limit = 1340 UVT * UVT_VAL (~66M) -> 16M is lower.
+    const expectedLimit = 16_000_000;
 
-    // Check globalLimit matches 40M (assuming it's less than 1340 UVT approx 63M)
     expect(general.globalLimit).toBeCloseTo(expectedLimit, -1);
-
-    // Ensure it is NOT 16M (which would be 40% of 40M)
-    expect(general.globalLimit).not.toBeCloseTo((incomeValue - costsValue) * 0.4, -1);
   });
 
   // 🚨 Bug Crítico 2: FPV y AFC within "Smart Allocation"

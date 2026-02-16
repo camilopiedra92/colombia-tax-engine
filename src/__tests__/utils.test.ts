@@ -186,6 +186,16 @@ describe('Tax Utilities Tests', () => {
       expect(result.thresholds.comprasConsumos.exceeds).toBe(true);
     });
 
+    test('should BE obligated at exactly the threshold (inclusive >=)', () => {
+      const payer: TaxPayer = {
+        ...mockPayerBase,
+        totalPurchases: 1400 * UVT, // Exactly limit
+      };
+      const result = checkObligadoDeclarar(payer);
+      expect(result.isObligated).toBe(true);
+      expect(result.thresholds.comprasConsumos.exceeds).toBe(true);
+    });
+
     it('should be obligated if bankDeposits > 1400 UVT', () => {
       const payer: TaxPayer = {
         ...mockPayerBase,
@@ -204,17 +214,6 @@ describe('Tax Utilities Tests', () => {
       const result = checkObligadoDeclarar(payer);
       expect(result.isObligated).toBe(true);
       expect(result.reasons).toContain('Es responsable del impuesto sobre las ventas (IVA)');
-    });
-
-    it('should NOT be obligated at exactly the threshold (strict >)', () => {
-      const payer: TaxPayer = {
-        ...mockPayerBase,
-        incomes: [
-          { id: 'i1', category: 'renta_trabajo', description: 'Salary', grossValue: 1400 * UVT },
-        ],
-      };
-      const result = checkObligadoDeclarar(payer);
-      expect(result.isObligated).toBe(false);
     });
 
     it('should report multiple reasons when exceeding multiple thresholds', () => {

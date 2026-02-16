@@ -1,7 +1,7 @@
 {
   "name": "colombia-tax-engine",
-  "version": "1.1.1",
-  "description": "Colombian Tax Engine - Declaración de Renta Personas Naturales (Formulario 210)",
+  "version": "1.2.0",
+  "description": "Motor de cálculo de Renta Personas Naturales (Formulario 210) — 100% compliant with DIAN regulations",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -5,7 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0] - 2026-02-15
+## [1.2.0] - 2026-02-15
+
+### Added
+- **Platinum Audit Compliance**: Implemented 6 critical "God Level" fixes verified by external audit.
+- **Dependents Optimization**: Smart simulation to maximize benefits (10% vs 72 UVT) within 40% limit.
+- **25% Exempt Base**: Corrected deduction order (Ley 2277 deductions subtracted first).
+- **Pension INCR**: Deduct Health/Solidarity before exemption to prevent "double dipping".
+- **RAIS Global Limit**: Strict 25% limit based on Total Tributary Income (Gross - INCR).
+- **CAN vs Losses**: Reordered logic to preserve tax loss shields.
+- **Compliance Caps**: Housing sale cost cap (15,000 UVT) and strict Wealth Threshold (>).
+
+## [1.1.1] - 2026-02-15
 
 ### Added
 

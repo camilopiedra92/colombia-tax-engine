@@ -26,7 +26,9 @@ export function checkObligadoDeclarar(payer: TaxPayer): ObligadoResult {
   // 1. Patrimonio bruto > 4,500 UVT
   const patrimonioBruto = payer.assets.reduce((sum, a) => sum + a.value, 0);
   const patThreshold = OBLIGADOS.PATRIMONIO_BRUTO_UVT * UVT;
-  const patExceeds = patrimonioBruto > patThreshold; // Estrictamente mayor
+  // Art. 592: "que no sean inferiores a..." -> SÍ declara si es > (estrictamente superior)
+  // FIX Auditoría: Es > 4500, no >=.
+  const patExceeds = patrimonioBruto > patThreshold;
   if (patExceeds) {
     reasons.push(
       `Patrimonio bruto ($${patrimonioBruto.toLocaleString()}) superior a ${OBLIGADOS.PATRIMONIO_BRUTO_UVT} UVT ($${patThreshold.toLocaleString()})`,
@@ -36,7 +38,7 @@ export function checkObligadoDeclarar(payer: TaxPayer): ObligadoResult {
   // 2. Ingresos brutos > 1,400 UVT
   const ingresosBrutos = payer.incomes.reduce((sum, i) => sum + i.grossValue, 0);
   const ingThreshold = OBLIGADOS.INGRESOS_BRUTOS_UVT * UVT;
-  const ingExceeds = ingresosBrutos > ingThreshold; // Estrictamente mayor
+  const ingExceeds = ingresosBrutos >= ingThreshold;
   if (ingExceeds) {
     reasons.push(
       `Ingresos brutos ($${ingresosBrutos.toLocaleString()}) superiores a ${OBLIGADOS.INGRESOS_BRUTOS_UVT} UVT ($${ingThreshold.toLocaleString()})`,
@@ -46,7 +48,7 @@ export function checkObligadoDeclarar(payer: TaxPayer): ObligadoResult {
   // 3. Consumos tarjeta de crédito > 1,400 UVT
   const consumos = payer.creditCardExpenses || 0;
   const tcThreshold = OBLIGADOS.CONSUMOS_TC_UVT * UVT;
-  const tcExceeds = consumos > tcThreshold; // Estrictamente mayor
+  const tcExceeds = consumos >= tcThreshold;
   if (tcExceeds) {
     reasons.push(
       `Consumos con tarjeta de crédito ($${consumos.toLocaleString()}) superiores a ${OBLIGADOS.CONSUMOS_TC_UVT} UVT ($${tcThreshold.toLocaleString()})`,
@@ -56,7 +58,7 @@ export function checkObligadoDeclarar(payer: TaxPayer): ObligadoResult {
   // 4. Compras y consumos > 1,400 UVT
   const compras = payer.totalPurchases || 0;
   const compThreshold = OBLIGADOS.COMPRAS_UVT * UVT;
-  const compExceeds = compras > compThreshold; // Estrictamente mayor
+  const compExceeds = compras >= compThreshold;
   if (compExceeds) {
     reasons.push(
       `Compras y consumos ($${compras.toLocaleString()}) superiores a ${OBLIGADOS.COMPRAS_UVT} UVT ($${compThreshold.toLocaleString()})`,
@@ -66,7 +68,7 @@ export function checkObligadoDeclarar(payer: TaxPayer): ObligadoResult {
   // 5. Consignaciones bancarias > 1,400 UVT
   const consignaciones = payer.bankDeposits || 0;
   const consThreshold = OBLIGADOS.CONSIGNACIONES_UVT * UVT;
-  const consExceeds = consignaciones > consThreshold; // Estrictamente mayor
+  const consExceeds = consignaciones >= consThreshold;
   if (consExceeds) {
     reasons.push(
       `Consignaciones bancarias ($${consignaciones.toLocaleString()}) superiores a ${OBLIGADOS.CONSIGNACIONES_UVT} UVT ($${consThreshold.toLocaleString()})`,

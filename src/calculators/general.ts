@@ -25,9 +25,10 @@
 //
 // OPTIMIZACIÓN:
 //   • Smart Allocation: Deducciones se imputan primero a rentas sin 25%
+//   • Smart Allocation: Deducciones se imputan primero a rentas sin 25%
 //     (capital/no laboral, luego honorarios con costos) para maximizar
 //     la base del 25% exento laboral.
-//     FIX: FPV/AFC no debe moverse, queda donde se originó (Ring-Fencing).
+//     NOTA: FPV/AFC no debe moverse, queda donde se originó (Ring-Fencing).
 // ═══════════════════════════════════════════════════════════════════
 
 import { TaxPayer, IncomeCategory } from '../types';
@@ -127,25 +128,44 @@ export function calculateGeneralSchedule(payer: TaxPayer): GeneralScheduleResult
   // Total INCR para report (solo sub-cédulas laborales + cesantías)
   let reportINCR = 0;
 
-  // Límite global RAIS (2500 UVT anuales, no por ingreso)
-  // FIX Bug 5: El límite se consume globalmente
-  let remainingRaisLimit = GENERAL.RAIS_INCR_LIMIT_UVT * UVT;
+  // ═══ PRE-CÁLCULO RAIS GLOBAL (Fix Auditoría) ═══
+  // El límite de RAIS (30% ingreso tributario o 3800 UVT) es GLOBAL y ANUAL.
+  // Se debe calcular sobre la suma de TODOS los ingresos tributarios.
+  let totalGrossForRais = 0;
+  let totalMandatoryIncrForRais = 0;
+  let totalRaisContribution = 0;
+
+  incomes.forEach((inc) => {
+    totalGrossForRais += inc.grossValue;
+    totalMandatoryIncrForRais +=
+      (inc.healthContribution || 0) + (inc.pensionContribution || 0) + (inc.solidarityFund || 0);
+    totalRaisContribution += inc.voluntaryPensionRAIS || 0;
+  });
+
+  const globalTributaryBase = Math.max(0, totalGrossForRais - totalMandatoryIncrForRais);
+  const allowedRais = Math.min(
+    totalRaisContribution,
+    globalTributaryBase * GENERAL.RAIS_INCR_PCT,
+    GENERAL.RAIS_INCR_LIMIT_UVT * UVT,
+  );
+
+  // Factor de prorrateo para asignar el RAIS deducible a cada ingreso
+  const raisFactor = totalRaisContribution > 0 ? allowedRais / totalRaisContribution : 0;
 
   incomes.forEach((inc) => {
     // ═══ Rentas CAN: Exención total, bypass del límite 40% ═══
-    // FIX Bug 3: NO hacer return early. CAN income debe sumar al Gross y restarse al final.
+    // CAN income debe sumar al Gross y restarse al final.
     if (inc.isCANIncome) {
       canExemptIncome += inc.grossValue;
       // Continúa para sumar a las sub-cédulas, luego se restará al final
     }
 
-    // Calcular RAIS como INCR con su propio límite GLOBAL (Art. 55 ET)
-    const theoreticalRais = Math.min(inc.grossValue * GENERAL.RAIS_INCR_PCT, remainingRaisLimit);
-    const rais = Math.min(inc.voluntaryPensionRAIS || 0, theoreticalRais);
-    remainingRaisLimit -= rais; // Consumir cupo global
+    // Calcular RAIS usando el factor global pre-calculado
+    const rais = (inc.voluntaryPensionRAIS || 0) * raisFactor;
+    // remainingRaisLimit ya no se usa aquí porque se controló globalmente arriba
 
     // Total INCR para este ingreso
-    const totalIncr =
+    let totalIncr =
       (inc.healthContribution || 0) +
       (inc.pensionContribution || 0) +
       (inc.solidarityFund || 0) +
@@ -181,18 +201,18 @@ export function calculateGeneralSchedule(payer: TaxPayer): GeneralScheduleResult
       case 'ganancia_ocasional': {
         // Reclasificada
         // ═══ Componente Inflacionario (Art. 38 ET) ═══
-        let effectiveGross = inc.grossValue;
         if (inc.financialYields) {
-          // Si es rendimiento financiero, RESTA el componente inflacionario del ingreso BRUTO
-          // Técnicamente es un INCR, pero simplificamos restando del bruto efectivo
+          // Exógena: Inflacionario va al INCR, no reduce el Gross
+          // Matemáticamente da igual, pero ante la DIAN, el banco reporta el 100% del rendimiento bruto.
+          // Debes sumar el componente inflacionario a la variable totalIncr (Ingresos No Constitutivos de Renta).
           const pct = inc.inflationaryComponentPct ?? GENERAL.INFLATIONARY_COMPONENT_PCT;
-          const inflationaryAmount = Math.round(inc.grossValue * pct);
-          effectiveGross = Math.max(0, inc.grossValue - inflationaryAmount);
+          totalIncr += Math.round(inc.grossValue * pct);
         }
 
-        capitalNonLaborGross += effectiveGross;
+        capitalNonLaborGross += inc.grossValue;
         capitalNonLaborINCR += totalIncr;
-        capitalNonLaborCosts += inc.costs || 0;
+        // FIX CRÍTICO: Si se reclasifica, DEBE llevarse su costo fiscal.
+        capitalNonLaborCosts += (inc.costs || 0) + (inc.costBasis || 0);
         break;
       }
 
@@ -227,9 +247,12 @@ export function calculateGeneralSchedule(payer: TaxPayer): GeneralScheduleResult
   const totalGross = laborEligibleGross + laborWithCostsGross + capitalNonLaborGross;
   const totalINCR = laborEligibleINCR + laborWithCostsINCR + capitalNonLaborINCR;
 
-  // FIX Bug 1: La base del límite del 40% se calcula sobre (Bruto - INCR),
-  // ANTES de restar costos. Art. 336 ET.
-  const baseFor40Limit = Math.max(0, totalGross - totalINCR);
+  // La base del límite del 40% NO está restando los Costos (general.ts)
+  // Calculas la base del límite del 40% sobre (Ingresos Brutos - INCR).
+  // Sin embargo, la estructura técnica del Formulario 210 exige que para los independientes,
+  // la Renta Líquida antes del límite sea (Ingresos Brutos - INCR - Costos y Gastos - Rentas CAN).
+  const totalCosts = laborWithCostsCosts + capitalNonLaborCosts;
+  const baseFor40Limit = Math.max(0, totalGross - totalINCR - totalCosts - canExemptIncome);
 
   // Bases Netas (Después de Costos)
   const laborEligibleNet = Math.max(0, laborEligibleGross - laborEligibleINCR);
@@ -244,19 +267,19 @@ export function calculateGeneralSchedule(payer: TaxPayer): GeneralScheduleResult
 
   // Renta Líquida Ordinaria (antes de deducciones)
   const totalNetIncome = laborEligibleNet + laborWithCostsNet + capitalNonLaborNet;
-  const totalCosts = laborWithCostsCosts + capitalNonLaborCosts;
+  // totalCosts ya fue definido arriba
 
   // ═══ 4. Deducciones (Art. 119, 387 ET) ═══
   let totalDeductions = 0;
 
   // 4.1 Intereses vivienda — Art. 119 ET
-  // UPDATED: Límite mensual 100 UVT * meses
+  // Límite Vivienda Anual (1.200 UVT absolutas)
+  // La mensualización solo aplica para la nómina/retención en la fuente, no para la declaración anual.
   const housingInterestRaw = payer.deductions
     .filter((d) => d.category === 'intereses_vivienda')
     .reduce((sum, d) => sum + d.value, 0);
-  const housingMonths =
-    payer.deductions.find((d) => d.category === 'intereses_vivienda')?.monthsReported || 12;
-  const housingLimit = GENERAL.HOUSING_INTEREST_LIMIT_MONTHLY_UVT * housingMonths * UVT;
+  // Eliminamos lógica de mensualización
+  const housingLimit = 1200 * UVT;
   const housingInterest = Math.min(housingInterestRaw, housingLimit);
   totalDeductions += housingInterest;
 
@@ -271,54 +294,91 @@ export function calculateGeneralSchedule(payer: TaxPayer): GeneralScheduleResult
   const health = Math.min(healthRaw, healthLimit);
   totalDeductions += health;
 
-  // 4.3 Dependientes
-  const validDependents = Math.min(payer.dependentsCount || 0, GENERAL.DEPENDENTS_MAX_COUNT);
-  const dependentsDeductionLey2277 = validDependents * GENERAL.DEPENDENTS_PER_UVT * UVT; // Excluido límite 40%
-
-  // Deducción Art. 387: 10% ingresos laborales BRUTOS, tope 32 UVT/mes
-  const totalLaborGross = laborEligibleGross + laborWithCostsGross;
-  let dependentsDeductionArt387 = 0;
-  if (validDependents > 0 && totalLaborGross > 0) {
-    // Asumimos 12 meses por defecto si no se especifica, pero debería ser configurable
-    // Usamos logicamente 12 meses ya que dependientes es anual, o proporcional a meses laborados
-    const depMonths = 12;
-    const limitArt387 = GENERAL.DEPENDENTS_ART_387_LIMIT_MONTHLY_UVT * depMonths * UVT;
-    const potentialDeduction = totalLaborGross * GENERAL.DEPENDENTS_ART_387_PCT;
-    dependentsDeductionArt387 = Math.min(potentialDeduction, limitArt387);
-  }
-  totalDeductions += dependentsDeductionArt387;
-
-  // 4.4 GMF (50% deducible)
+  // 4.3 GMF (50% deducible)
   const gmfRaw = payer.deductions
     .filter((d) => d.category === 'gmf')
     .reduce((sum, d) => sum + d.value, 0);
   const gmfDeductible = Math.round(gmfRaw * GENERAL.GMF_DEDUCTIBLE_PCT);
   totalDeductions += gmfDeductible;
 
-  // 4.5 Icetex
+  // 4.4 Icetex
   const icetexRaw = payer.deductions
     .filter((d) => d.category === 'icetex')
     .reduce((sum, d) => sum + d.value, 0);
   const icetex = Math.min(icetexRaw, GENERAL.ICETEX_LIMIT_UVT * UVT);
   totalDeductions += icetex;
 
-  // 4.6 Otras
+  // 4.5 Otras
   const otrasDeducciones = payer.deductions
     .filter((d) => d.category === 'otras_deducciones' || d.category === 'donaciones')
     .reduce((sum, d) => sum + d.value, 0);
   totalDeductions += otrasDeducciones;
 
+  // 4.6 Dependientes (Algoritmo de Optimización "God Level" V4)
+  // Fix Auditoría: Simular espacio en el 40% para decidir real conveniencia del 10%.
+
+  const actualDependents = payer.dependentsCount || 0;
+  const totalLaborGross = laborEligibleGross + laborWithCostsGross;
+
+  let dependentsDeductionLey2277 = 0;
+  let dependentsDeductionArt387 = 0;
+
+  if (actualDependents > 0 && totalLaborGross > 0) {
+    const limitArt387 = GENERAL.DEPENDENTS_ART_387_LIMIT_MONTHLY_UVT * 12 * UVT;
+    const potential10Pct = Math.min(totalLaborGross * GENERAL.DEPENDENTS_ART_387_PCT, limitArt387);
+    const value72UVT = GENERAL.DEPENDENTS_PER_UVT * UVT;
+
+    // SIMULACIÓN: ¿Cuánto espacio real queda en el 40%?
+    // Calculamos el límite teórico máximo antes de restar lo que ya llevamos
+    const maxGlobalLimit = Math.min(
+      baseFor40Limit * GENERAL.LIMIT_40_PCT,
+      GENERAL.LIMIT_ABSOLUTE_UVT * UVT,
+    );
+
+    // Deducciones que ya sabemos que van fijas al 40%
+    const currentClaims = housingInterest + health + gmfDeductible + icetex + otrasDeducciones;
+
+    // Espacio disponible en el cubo del 40%
+    const roomLeftIn40Pct = Math.max(0, maxGlobalLimit - currentClaims);
+
+    // Beneficio EFECTIVO del 10% (limitado por lo que cabe en el 40%)
+    const effective10Pct = Math.min(potential10Pct, roomLeftIn40Pct);
+
+    // Asignación inteligente:
+    // Si el 10% efectivo aporta más que 72 UVT (que van libre de límite), tomamos 10%.
+    // Ojo: 72 UVT *siempre* se toman full porque van fuera del límite.
+
+    let depsFor72 = Math.min(actualDependents, GENERAL.DEPENDENTS_MAX_COUNT);
+    let depsFor10 = 0;
+
+    if (effective10Pct > value72UVT) {
+      // Nos conviene gastar 1 dependiente en el 10%
+      depsFor10 = 1;
+      // Los dependientes restantes (hasta 4) se van a las 72 UVT
+      // Total permitidos Ley 2277: Hasta 4 adicionales
+      depsFor72 = Math.min(Math.max(0, actualDependents - 1), GENERAL.DEPENDENTS_MAX_COUNT);
+    }
+
+    dependentsDeductionArt387 = depsFor10 * potential10Pct;
+    dependentsDeductionLey2277 = depsFor72 * value72UVT;
+  }
+  totalDeductions += dependentsDeductionArt387; // Las 72 UVT se suman abajo (exentas del 40%)
+
   // 4.7 Factura Electrónica (Excluida límite 40%)
   const facturaRaw = payer.deductions
     .filter((d) => d.category === 'factura_electronica')
     .reduce((sum, d) => sum + d.value, 0);
-  const facturaElectronica = Math.min(facturaRaw, GENERAL.ELECTRONIC_INVOICE_LIMIT_UVT * UVT);
+  // Sumas el valor total de las compras (facturaRaw) multiplicado por el 1% (ELECTRONIC_INVOICE_PCT)
+  const facturaElectronica = Math.min(
+    facturaRaw * GENERAL.ELECTRONIC_INVOICE_PCT,
+    GENERAL.ELECTRONIC_INVOICE_LIMIT_UVT * UVT,
+  );
 
   // ═══ 5. Rentas Exentas ═══
   let totalExemptions = 0;
 
   // 5.1 AFC / FPV — Art. 126-1
-  // FIX Bug 2: AFC/FPV están atadas a la fuente. No entran al Smart Allocation general
+  // AFC/FPV están atadas a la fuente. No entran al Smart Allocation general
   // sino que se restan específicamente. Se calculan globalmente aquí pero
   // logicamente pertenecen a la cédula laboral si vinieron de salario.
   const afcFpvRaw = payer.deductions
@@ -377,9 +437,13 @@ export function calculateGeneralSchedule(payer: TaxPayer): GeneralScheduleResult
     const specificExemptionsLabor =
       afcFpv + totalCesantiasExempt + indemnizacion + gastosEntierro + otrasExentas;
 
+    // FIX Auditoría: Restar TODAS las deducciones, incluyendo las que están por fuera del 40% (Ley 2277 y Factura)
+    // Art. 206 Num 10: "...menos los ingresos no constitutivos de renta, las deducciones y las demás rentas exentas"
+    const extraDeductions = dependentsDeductionLey2277 + facturaElectronica;
+
     const laborBaseFor25 = Math.max(
       0,
-      laborEligibleNet - imputedToLaborEligible - specificExemptionsLabor,
+      laborEligibleNet - imputedToLaborEligible - specificExemptionsLabor - extraDeductions,
     );
 
     exempt25 = Math.min(laborBaseFor25 * GENERAL.EXEMPT_25_PCT, GENERAL.EXEMPT_25_LIMIT_UVT * UVT);
@@ -404,25 +468,23 @@ export function calculateGeneralSchedule(payer: TaxPayer): GeneralScheduleResult
   const effectiveClaims = Math.min(acceptedClaims, totalNetIncome);
 
   // Renta Líquida Ordinaria del Ejercicio
-  let rentaLiquidaOrdinaria = Math.max(0, totalNetIncome - effectiveClaims);
+  const rentaLiquidaOrdinaria = Math.max(0, totalNetIncome - effectiveClaims);
 
-  // ═══ 9. Pérdidas Fiscales (Carry-Forward) ═══
+  // ═══ 9. Rentas CAN (Subtract final) ═══
+  // FIX Bug 5: Se depuran ANTES de compensar pérdidas para no quemar escudos fiscales innecesariamente.
+  // Primero aplicamos la exención CAN a la Renta Líquida Ordinaria.
+  const basePrePerdidas = Math.max(0, rentaLiquidaOrdinaria - canExemptIncome);
+
+  // ═══ 10. Pérdidas Fiscales (Carry-Forward) ═══
   // FIX Bug 4: Se compensan DESPUÉS de depurar la renta ordinaria
-  // La pérdida fiscal de años anteriores se resta hasta donde alcance la renta líquida
-  // Ojo: La pérdida fiscal solo se puede imputar a su cédula de origen o general (según año)
-  // Simplificación: Se imputa contra la renta líquida general disponible.
-  // Restricción técnica: No puede generar renta negativa.
   const carryForwardLosses = payer.previousYearCapitalLosses || 0;
-  // Solo podemos compensar hasta el monto de renta de capital/no laboral??
-  // Art. 330: "podrán compensarse... dentro de la misma cédula"
-  // Sin embargo, tras la unificación cédula general, se puede contra la general?
-  // Conservadoramente: Limitamos a la Renta Liquida Ordinaria disponible.
-  const carryForwardApplied = Math.min(carryForwardLosses, rentaLiquidaOrdinaria);
-  rentaLiquidaOrdinaria -= carryForwardApplied;
 
-  // ═══ 10. Rentas CAN (Subtract final) ═══
-  // FIX Bug 3: Se resta al puro final, sin afectar límites anteriores
-  const finalTaxableIncome = Math.max(0, rentaLiquidaOrdinaria - canExemptIncome);
+  // FIX Ley 2010/2019: Se cruza contra toda la renta ordinaria disponible, sin límite de sub-cédula.
+  // Ya no se limita a Capital/No Laboral (unificación cédula general).
+  const carryForwardApplied = Math.min(carryForwardLosses, basePrePerdidas);
+
+  // Renta Líquida Gravable Final
+  const finalTaxableIncome = Math.max(0, basePrePerdidas - carryForwardApplied);
 
   return {
     grossIncome: totalGross, // Debe incluir CAN

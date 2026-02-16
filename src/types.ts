@@ -119,6 +119,10 @@ export interface IncomeSource {
 
   // Optimización ICA (Industria y Comercio) — "God Level"
   icaPaid?: number; // Valor pagado por ICA (para comparar Costo vs Descuento)
+
+  // Optimización 3: Exenciones Condicionadas en Ganancia Ocasional (Vivienda)
+  depositedInAFC?: boolean; // Se depositó en cuenta AFC
+  usedForMortgage?: boolean; // Se usó para pagar hipoteca
 }
 
 // ═══════════════════════════════════════════════════════════════════

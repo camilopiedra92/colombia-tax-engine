@@ -40,15 +40,23 @@ export function calculatePatrimonioTax(
   // ═══ 2. Calcular exclusión de vivienda propia ═══
   // Art. 295-3: Se excluyen las primeras 12,000 UVT del valor
   // patrimonial de la casa/apartamento de habitación.
-  const primaryResidence = payer.assets.find(
-    (a) =>
-      a.description.toLowerCase().includes('vivienda') ||
-      a.description.toLowerCase().includes('casa') ||
-      a.description.toLowerCase().includes('apartamento'),
-  );
+  // OPTIMIZACIÓN 1: Ordenar viviendas por valor para maximizar exclusión
+  const viviendas = payer.assets
+    .filter((a) => a.description.toLowerCase().match(/(vivienda|casa|apartamento)/))
+    .sort((a, b) => {
+      const valA = Math.max(a.fiscalCost || a.value, a.cadastralValue || 0);
+      const valB = Math.max(b.fiscalCost || b.value, b.cadastralValue || 0);
+      return valB - valA; // Descendente
+    });
+  const primaryResidence = viviendas.length > 0 ? viviendas[0] : null;
+
   let housingExclusion = 0;
   if (primaryResidence) {
-    housingExclusion = Math.min(primaryResidence.value, HOUSING_EXCLUSION_UVT * UVT);
+    const taxValue = Math.max(
+      primaryResidence.fiscalCost || primaryResidence.value,
+      primaryResidence.cadastralValue || 0,
+    );
+    housingExclusion = Math.min(taxValue, HOUSING_EXCLUSION_UVT * UVT);
   }
 
   // ═══ 3. Base gravable ═══

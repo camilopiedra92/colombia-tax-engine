@@ -526,9 +526,12 @@ describe('general.ts — Full Coverage', () => {
       ],
     };
     const result = calculateGeneralSchedule(payer);
-    // effectiveGross = 10M - round(10M * 0.5088) = 10M - 5088000 = 4912000
-    expect(result.grossIncome).toBe(4_912_000);
-    // Net should reflect inflationary deduction
+    // FIX Audit 2025: Inflationary component is INCR, does NOT reduce Gross Income directly.
+    // Gross = 10M
+    expect(result.grossIncome).toBe(10_000_000);
+    // Net Income = Gross - INCR - Costs
+    // INCR = 5,088,000 (50.88% of 10M)
+    // Net = 10,000,000 - 5,088,000 = 4,912,000
     expect(result.netIncome).toBe(4_912_000);
   });
 
