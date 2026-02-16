@@ -292,9 +292,8 @@ export function applyTaxTable(taxableBase: number, year: TaxYear): number {
 
   if (baseUVT <= 0) return 0;
 
-  const range = TAX_TABLE.find((r) => baseUVT > r.min && baseUVT <= r.max)!;
-
-  if (range.rate === 0) return 0;
+  const range = TAX_TABLE.find((r) => baseUVT > r.min && baseUVT <= r.max);
+  if (!range || range.rate === 0) return 0;
 
   // Fórmula: (Base en UVT - Límite inferior) × Tarifa + Impuesto base del rango
   const taxInUVT = (baseUVT - range.min) * range.rate + range.base;

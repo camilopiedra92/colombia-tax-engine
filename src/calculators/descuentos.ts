@@ -14,7 +14,7 @@
 //   • Art. 242 par.: Descuento 19% dividendos (calculado en dividendos.ts)
 // ═══════════════════════════════════════════════════════════════════
 
-import { TaxPayer, TaxCredit } from '../types';
+import { TaxPayer } from '../types';
 import { getTaxRules } from '../rules';
 
 export interface DescuentosResult {

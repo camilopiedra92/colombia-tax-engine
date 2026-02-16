@@ -20,7 +20,7 @@
 //   • Dividendos: Bloqueo de descuento tributario para no exceder impuesto marginal.
 // ═══════════════════════════════════════════════════════════════════
 
-import { TaxPayer, TaxResult, Asset, TaxCredit } from './types';
+import { TaxPayer, TaxResult, TaxCredit } from './types';
 import { getTaxRules, applyTaxTable } from './rules';
 import { calculateGeneralSchedule } from './calculators/general';
 import { calculatePensionesSchedule } from './calculators/pensiones';

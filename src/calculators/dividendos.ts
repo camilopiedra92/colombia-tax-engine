@@ -15,10 +15,8 @@
 //     → Tarifa del 20% sobre el total (sin consolidación)
 // ═══════════════════════════════════════════════════════════════════
 
-import { TaxPayer, IncomeCategory } from '../types';
-import { getTaxRules, applyTaxTable } from '../rules';
-
-const DIVIDEND_CATEGORIES: IncomeCategory[] = ['dividendos_ordinarios', 'dividendos_gravados'];
+import { TaxPayer } from '../types';
+import { getTaxRules } from '../rules';
 
 export interface DividendosSubCedula1 {
   grossIncome: number;

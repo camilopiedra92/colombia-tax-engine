@@ -14,7 +14,7 @@
 //   > 239,000 UVT: 1.5%
 // ═══════════════════════════════════════════════════════════════════
 
-import { TaxPayer, Asset } from '../types';
+import { TaxPayer } from '../types';
 import { getTaxRules } from '../rules';
 
 export interface PatrimonioTaxResult {
@@ -61,9 +61,12 @@ export function calculatePatrimonioTax(
   // Invariante: threshold (72,000 UVT) > max exclusion (12,000 UVT)
   // → taxableBase > 0 → taxableBaseUVT > 0 → TABLE siempre encuentra rango
   // (TABLE[0].min = 0, TABLE[-1].max = Infinity)
-  const bracket = TABLE.find((r) => taxableBaseUVT > r.min && taxableBaseUVT <= r.max)!;
+  const bracket = TABLE.find((r) => taxableBaseUVT > r.min && taxableBaseUVT <= r.max);
+  if (!bracket) {
+    return { isSubject: true, taxableBase, tax: 0 };
+  }
 
-  const baseTax: number = (bracket as any).baseTax;
+  const baseTax: number = (bracket as { baseTax: number }).baseTax;
   const taxUVT = baseTax + (taxableBaseUVT - bracket.min) * bracket.rate;
 
   const tax = Math.round(taxUVT * UVT);
