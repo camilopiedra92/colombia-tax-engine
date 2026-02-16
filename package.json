@@ -1,15 +1,32 @@
 {
-  "name": "@tax-optimizer/colombia-tax-engine",
+  "name": "colombia-tax-engine",
   "version": "1.0.0",
   "description": "Colombian Tax Engine - Declaración de Renta Personas Naturales (Formulario 210)",
-  "main": "src/index.ts",
-  "module": "src/index.ts",
-  "types": "src/types.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "USAGE.md"
+  ],
+  "sideEffects": false,
   "scripts": {
+    "build": "tsc",
     "test": "TMPDIR=\"$(pwd)/.tmp\" vitest run",
     "test:watch": "TMPDIR=\"$(pwd)/.tmp\" vitest",
     "test:coverage": "TMPDIR=\"$(pwd)/.tmp\" vitest run --coverage",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "keywords": [
     "colombia",
@@ -37,6 +54,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/tax-optimizer/colombia-tax-engine"
+    "url": "https://github.com/camilopiedra92/colombia-tax-engine"
+  },
+  "homepage": "https://github.com/camilopiedra92/colombia-tax-engine#readme",
+  "bugs": {
+    "url": "https://github.com/camilopiedra92/colombia-tax-engine/issues"
   }
 }

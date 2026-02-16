@@ -1,0 +1,36 @@
+# Development files
+src/__tests__
+examples
+.agent
+.tmp
+.vitest-cache
+.npm-cache
+coverage
+
+# Config files
+tsconfig.json
+vitest.config.mts
+.gitignore
+
+# Git
+.git
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Package manager locks (let users choose their package manager)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# CI/CD
+.github

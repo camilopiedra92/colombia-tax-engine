@@ -25,25 +25,35 @@
 
 ## 📦 Installation
 
-### As a Local Package
+### From NPM (Recommended)
 
 ```bash
-# From your project root
-npm install file:./packages/colombia-tax-engine
+npm install colombia-tax-engine
 ```
 
-### As a Git Submodule
+Or with other package managers:
 
 ```bash
-git submodule add <repository-url> packages/colombia-tax-engine
-cd packages/colombia-tax-engine
+# Yarn
+yarn add colombia-tax-engine
+
+# pnpm
+pnpm add colombia-tax-engine
+```
+
+### From Source
+
+```bash
+git clone https://github.com/camilopiedra92/colombia-tax-engine.git
+cd colombia-tax-engine
 npm install
+npm run build
 ```
 
 ## 🚀 Quick Start
 
 ```typescript
-import { TaxEngine, TaxPayer } from "@tax-optimizer/colombia-tax-engine";
+import { TaxEngine, TaxPayer } from "colombia-tax-engine";
 
 const taxpayer: TaxPayer = {
   id: "1234567890",
